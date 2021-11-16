@@ -1,15 +1,13 @@
 import pygame
 import random
 
-from pygame import color 
-
 width = 500
 height = 500
 rows = 20
 
 pygame.init()
-pon = pygame.mixer.Sound('python-sname/pon.wav')
-dead = pygame.mixer.Sound('python-sname/dead.wav')
+pon = pygame.mixer.Sound('python-snake/pon.wav')
+dead = pygame.mixer.Sound('python-snake/dead.wav')
 
 ##################################################
 ## クラス
@@ -19,7 +17,7 @@ class Cube():
     rows = 20
     w = 500
     
-    def __init__(self, start, x=1, y=1, color=(255, 0, 0)):
+    def __init__(self, start, x=1, y=0, color=(255, 0, 0)):
         self.pos = start
         self.x = x
         self.y = y
@@ -35,7 +33,7 @@ class Cube():
         i = self.pos[0]
         j = self.pos[1]
         
-        pygame.draw.rect(surface, self.color (i * dis + 1, j * dis + 1, dis - 2))
+        pygame.draw.rect(surface, self.color, (i * dis + 1, j * dis + 1, dis - 2, dis - 2))
         if eyes:
             center = dis // 2
             radius = 3
@@ -46,11 +44,11 @@ class Cube():
 
 class Snake():
     body = []
-    turns = []
+    turns = {}
     
     def __init__(self, color, pos):
         self.color = color
-        self.head - Cube(pos)
+        self.head = Cube(pos)
         self.body.append(self.head)
         self.x = 0
         self.y = 1
@@ -61,23 +59,23 @@ class Snake():
                 pygame.quit()
             keys = pygame.key.get_pressed()
             
-        for key in keys:
-            if keys[pygame.K_LEFT]:
-                self.x = -1
-                self.y = 0
-                self.turns = [self.head.pos[:]] = [self.x, self.y]
-            elif keys[pygame.K_RIGHT]:
-                self.x = 1
-                self.y = 0
-                self.turns = [self.head.pos[:]] = [self.x, self.y]
-            elif keys[pygame.K_UP]:
-                self.x = 0
-                self.y = -1
-                self.turns = [self.head.pos[:]] = [self.x, self.y]
-            elif keys[pygame.K_DOWN]:
-                self.x = 0
-                self.y = 1
-                self.turns = [self.head.pos[:]] = [self.x, self.y]
+            for key in keys:
+                if keys[pygame.K_LEFT]:
+                    self.x = -1
+                    self.y = 0
+                    self.turns[self.head.pos[:]] = [self.x, self.y]
+                elif keys[pygame.K_RIGHT]:
+                    self.x = 1
+                    self.y = 0
+                    self.turns[self.head.pos[:]] = [self.x, self.y]
+                elif keys[pygame.K_UP]:
+                    self.x = 0
+                    self.y = -1
+                    self.turns[self.head.pos[:]] = [self.x, self.y]
+                elif keys[pygame.K_DOWN]:
+                    self.x = 0
+                    self.y = 1
+                    self.turns[self.head.pos[:]] = [self.x, self.y]
         
         for i, c in enumerate(self.body):
             p = c.pos[:]
@@ -131,7 +129,7 @@ def drawGrid(width, rows, surface):
     y = 0
     
     for i in range(rows):
-        x = y + size
+        x = x + size
         y = y + size
         pygame.draw.line(surface, (128, 128, 128), (x, 0), (x, width))
         pygame.draw.line(surface, (128, 128, 128), (0, y), (width, y))
@@ -151,18 +149,21 @@ def randomFood(rows, food):
     return (x, y)
 
 snake = Snake((255, 0, 0), (10, 10))
+
 window = pygame.display.set_mode((width, height))
 
 def reDrawWindow():
     window.fill((0, 0, 0))
     drawGrid(width, rows, window)
+    snake.draw(window)
+    food.draw(window)
     pygame.display.update()
 
 def main():
     global food
     snake.addBody()
     flag = True
-    clock = pygame.time.Clock()()
+    clock = pygame.time.Clock()
     food = Cube(randomFood(rows, snake), color=(0, 255, 0))
     pygame.init()
     
@@ -171,14 +172,24 @@ def main():
         snake.move()
         headPos = snake.head.pos
         
-        if headPos[0] >= 20 or headPos[0] < 0 or headPos[1] >= 20 or headPos[1] > 0:
+        if headPos[0] >= 20 or headPos[0] < 0 or headPos[1] >= 20 or headPos[1] < 0:
             dead.play()
             print('Score:', len(snake.body))
             snake.reset((10, 10))
-            break
+        
+        if snake.body[0].pos == food.pos:
+            snake.addBody()
+            pon.play()
+            food = Cube(randomFood(rows, snake), color=(0, 255, 0))
+        
+        for x in range(len(snake.body)):
+            if snake.body[x].pos in list(map(lambda z: z.pos, snake.body[x + 1:])):
+                dead.play()
+                print('Score:', len(snake.body))
+                snake.reset((10, 10))
+                break
 
         reDrawWindow()
         pygame.display.set_caption('Snake Game')
 
-# 実行
 main()
